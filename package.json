@@ -1,0 +1,62 @@
+{
+  "name": "ableton-generative-library-plugin",
+  "version": "0.1.1",
+  "description": "Generative composition tool for Ableton Live — creates new arrangements from your existing audio library",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch server/src/index.ts",
+    "build": "tsc -p server/tsconfig.json",
+    "start": "node server/dist/index.js",
+    "scan": "tsx server/src/cli.ts scan",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build:plugin": "python3 scripts/build_amxd.py",
+    "package": "bash scripts/package.sh",
+    "lint": "eslint server/src/",
+    "lint:fix": "eslint server/src/ --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:reset": "rm -f server/data/library.db && tsx server/src/cli.ts init-db",
+    "prepare": "husky"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "ableton-js": "^4.0.4",
+    "better-sqlite3": "^11.7.0",
+    "fft.js": "^4.0.4",
+    "glob": "^11.0.0",
+    "music-metadata": "^10.6.0",
+    "osc": "^2.4.4",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^9.16.0",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.3",
+    "prettier": "^3.8.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.57.0",
+    "vitest": "^2.1.0"
+  },
+  "lint-staged": {
+    "server/src/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.{js,ts}": [
+      "prettier --write"
+    ]
+  }
+}

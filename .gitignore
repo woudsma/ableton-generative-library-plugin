@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+server/dist/
+dist/
+
+# Database
+server/data/*.db
+server/data/*.db-journal
+server/data/*.db-wal
+
+# Logs
+server/logs/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Max for Live compiled
+*.maxc

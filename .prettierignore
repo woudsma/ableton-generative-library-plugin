@@ -1,0 +1,8 @@
+node_modules
+dist
+server/dist
+server/data
+server/logs
+max-device/GenerativeLibrary.amxd
+max-device/generative-library.js
+*.amxd
