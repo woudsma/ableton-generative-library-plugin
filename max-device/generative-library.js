@@ -641,6 +641,22 @@ function addTrack() {
 
   // Use a Task so LiveAPI calls happen in the main thread
   var addTrackTask = new Task(function () {
+    // Save current track focus (best-effort, won't block track creation if it fails)
+    var currentTrackIdNum = 0;
+    try {
+      var viewApi = new LiveAPI('live_set view');
+      if (viewApi && viewApi.id != 0) {
+        var ref = viewApi.get('selected_track');
+        var refStr = String(ref);
+        var match = refStr.match(/(\d+)/);
+        if (match) {
+          currentTrackIdNum = parseInt(match[match.length - 1], 10);
+        }
+      }
+    } catch (e1) {
+      post('WARNING: Could not save track focus: ' + e1.message + '\n');
+    }
+
     try {
       var songApi = new LiveAPI('live_set');
       if (!songApi || songApi.id == 0) {
@@ -659,6 +675,20 @@ function addTrack() {
         newTrackApi.set('name', trackName);
         post('Generative Library: Created track "' + trackName + '" at index ' + trackCount + '\n');
         updateStatus('Created track "' + trackName + '"');
+      }
+
+      // Restore focus to the original track after a short delay
+      if (currentTrackIdNum > 0) {
+        var savedId = currentTrackIdNum;
+        var restoreTask = new Task(function () {
+          try {
+            var view = new LiveAPI('live_set view');
+            view.set('selected_track', 'id', savedId);
+          } catch (e2) {
+            post('WARNING: Could not restore track focus: ' + e2.message + '\n');
+          }
+        });
+        restoreTask.schedule(150);
       }
 
       // Refresh tracks and suggestions

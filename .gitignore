@@ -9,6 +9,7 @@ dist/
 server/data/*.db
 server/data/*.db-journal
 server/data/*.db-wal
+server/data/*.db-shm
 
 # Logs
 server/logs/
