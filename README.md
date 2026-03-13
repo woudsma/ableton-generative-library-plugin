@@ -2,6 +2,8 @@
 
 A generative composition tool for **Ableton Live 12** that creates new arrangements from your existing audio recording library. Select folders of jam recordings, and the plugin automatically groups them by track type (KICK, HIHAT, SYNTH, etc.) and generates random compositions by placing segments from your recordings into Ableton's arrangement or session view.
 
+<video src="assets/ableton-generative-library-plugin.mp4" controls width="100%"></video>
+
 ## How It Works
 
 ```
