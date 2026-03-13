@@ -116,6 +116,13 @@ export type ServerCommand =
   | { type: 'get_track_rules' }
   | { type: 'set_track_rule'; trackName: string; keywords: string[]; regexPattern?: string }
   | { type: 'generate'; config: GenerationConfig }
+  | {
+      type: 'row_variation';
+      sceneIndex: number;
+      skipSilence?: boolean;
+      loopClips?: boolean;
+      sameKey?: boolean;
+    }
   | { type: 'get_duration_options' }
   | { type: 'get_config' }
   | { type: 'get_track_suggestions' };
@@ -140,6 +147,7 @@ export type ServerResponse =
   | { type: 'generation_plan'; plan: GenerationPlan }
   | { type: 'generation_progress'; current: number; total: number; trackName: string }
   | { type: 'generation_complete'; clipsCreated: number }
+  | { type: 'variation_complete'; clipsCreated: number; newSceneIndex: number }
   | { type: 'track_suggestions'; suggestions: TrackSuggestion[] }
   | { type: 'error'; message: string; command?: string }
   | { type: 'ok'; message?: string };

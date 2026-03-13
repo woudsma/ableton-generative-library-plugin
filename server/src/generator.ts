@@ -12,6 +12,7 @@ import type {
   TrackRule,
   AbletonTrack,
 } from './types.js';
+import type { SessionClipInfo } from './ableton.js';
 
 export class GenerativeEngine {
   private db: DatabaseService;
@@ -212,6 +213,129 @@ export class GenerativeEngine {
     const plan = await this.createPlan(config);
     const clipsCreated = await this.executePlan(plan);
     return { plan, clipsCreated };
+  }
+
+  /**
+   * Create a variation of a session scene (row).
+   * Reads clips from the given scene, then for each clip creates a new clip
+   * on the same track with the same source file but a different random start position.
+   * The new clips are placed on a new scene.
+   *
+   * Returns the number of clips created and the index of the new scene.
+   */
+  async createRowVariation(
+    sceneIndex: number,
+    options?: {
+      skipSilence?: boolean;
+      loopClips?: boolean;
+      sameKey?: boolean;
+    },
+    onProgress?: (current: number, total: number, trackName: string) => void,
+  ): Promise<{ clipsCreated: number; newSceneIndex: number }> {
+    const sourceClips = await this.ableton.getSceneClips(sceneIndex);
+
+    if (sourceClips.length === 0) {
+      throw new Error(`No clips found in scene ${sceneIndex + 1}`);
+    }
+
+    const tempo = await this.ableton.getTempo();
+    const skipSilence = options?.skipSilence !== false; // default true
+    const loopClips = options?.loopClips === true; // default false
+
+    // Create a new scene for the variation
+    const trackIndices = sourceClips.map((c) => c.trackIndex);
+    const newSceneIndex = await this.ableton.getNextSessionScene(trackIndices);
+
+    console.log(
+      `[Generator] Row variation: scene ${sceneIndex} → scene ${newSceneIndex}, ${sourceClips.length} clips`,
+    );
+
+    // Determine which volumes are currently mounted
+    const mountedVolumes = this.getMountedVolumes();
+
+    let clipsCreated = 0;
+
+    await this.ableton.beginUndoStep();
+
+    try {
+      for (let i = 0; i < sourceClips.length; i++) {
+        const sourceClip = sourceClips[i];
+        onProgress?.(i + 1, sourceClips.length, sourceClip.trackName);
+
+        try {
+          // Look up the audio file in the database to get duration/metadata
+          const audioFile = this.db.getFileByPath(sourceClip.filePath);
+
+          // Calculate new random start position within the file
+          const clipDurationBeats = sourceClip.endMarker - sourceClip.startMarker;
+
+          let newStartMarker: number;
+          let newEndMarker: number;
+
+          if (audioFile) {
+            const fileDurationBeats = this.secondsToBeats(audioFile.durationSeconds, tempo);
+            const { rangeStartBeats, rangeEndBeats } = this.getEffectiveRange(
+              audioFile,
+              fileDurationBeats,
+              tempo,
+              skipSilence,
+            );
+            const effectiveDuration = rangeEndBeats - rangeStartBeats;
+
+            // Pick a different random start point, quantized to 8-beat boundaries
+            const maxStart = Math.max(0, effectiveDuration - clipDurationBeats);
+            if (maxStart > 0) {
+              newStartMarker = rangeStartBeats + Math.floor((Math.random() * maxStart) / 8) * 8;
+            } else {
+              newStartMarker = rangeStartBeats;
+            }
+            newEndMarker = newStartMarker + clipDurationBeats;
+          } else {
+            // File not in database — just shift the start marker randomly
+            // Use the original markers as reference for the file's usable range
+            const originalDuration = clipDurationBeats;
+            // Shift by a random multiple of 8 beats (up to 128 beats either direction)
+            const shift = (Math.floor(Math.random() * 32) - 16) * 8;
+            newStartMarker = Math.max(0, sourceClip.startMarker + shift);
+            newEndMarker = newStartMarker + originalDuration;
+          }
+
+          // Create the clip in the new scene
+          const slotIndex = await this.ableton.createSessionClip(
+            sourceClip.trackIndex,
+            sourceClip.filePath,
+            newSceneIndex,
+          );
+
+          // Set markers on the new clip
+          await this.ableton.setSessionClipMarkers(
+            sourceClip.trackIndex,
+            slotIndex,
+            newStartMarker,
+            newEndMarker,
+            {
+              looping: loopClips,
+              name: `${sourceClip.trackName} [var]`,
+            },
+          );
+
+          clipsCreated++;
+          console.log(
+            `[Generator]   ${sourceClip.trackName}: ${sourceClip.filePath} [${newStartMarker.toFixed(1)}-${newEndMarker.toFixed(1)}]`,
+          );
+        } catch (err) {
+          console.error(
+            `[Generator] Failed to create variation clip for track ${sourceClip.trackIndex}:`,
+            err instanceof Error ? err.message : err,
+          );
+        }
+      }
+    } finally {
+      await this.ableton.endUndoStep();
+    }
+
+    console.log(`[Generator] Row variation complete: ${clipsCreated}/${sourceClips.length} clips`);
+    return { clipsCreated, newSceneIndex };
   }
 
   // ─── Private: Segment Creation ───

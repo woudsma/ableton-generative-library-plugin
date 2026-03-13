@@ -19,7 +19,7 @@ import os
 # ════════════════════════════════════════════════════════════
 
 DEVICE_WIDTH = 550.0
-DEVICE_HEIGHT = 195.0
+DEVICE_HEIGHT = 170.0
 
 # Patching view layout (for editing in Max)
 # X regions: left=20, mid=200, right=400
@@ -368,15 +368,58 @@ boxes.append(box(tracklist_id, "umenu",
 
 lines.append(line(js_id, 2, tracklist_id, 0))  # js outlet 2 → track umenu
 
+# Solo toggle button (live.text — highlights when active)
+solo_id = new_id()
+boxes.append({
+    "box": {
+        "id": solo_id,
+        "maxclass": "live.text",
+        "numinlets": 1,
+        "numoutlets": 2,
+        "outlettype": ["", ""],
+        "parameter_enable": 1,
+        "patching_rect": [300.0, 140.0, 50.0, 20.0],
+        "presentation": 1,
+        "presentation_rect": [320.0, 49.0, 40.0, 20.0],
+        "text": "Solo",
+        "texton": "Solo",
+        "annotation": "Solo \u2014 toggle to disable all tracks except the selected one. Click again to restore.",
+        "saved_attribute_attributes": {
+            "valueof": {
+                "parameter_longname": "SoloTrack",
+                "parameter_mmax": 1.0,
+                "parameter_initial_enable": 1,
+                "parameter_initial": [0],
+                "parameter_shortname": "SoloTrack",
+                "parameter_type": 2,
+                "parameter_unitstyle": 0,
+                "parameter_enum": ["Off", "On"]
+            }
+        }
+    }
+})
+
+# Routing: Solo toggle → prepend soloTrack → js
+prepend_solo_id = new_id()
+boxes.append(box(prepend_solo_id, "newobj",
+    text="prepend soloTrack",
+    numinlets=1, numoutlets=1,
+    outlettype=[""],
+    patching_rect=[300.0, 170.0, 100.0, 22.0],
+    fontname="Arial Bold", fontsize=10.0))
+
+lines.append(line(solo_id, 0, prepend_solo_id, 0))   # Solo toggle → prepend
+lines.append(line(prepend_solo_id, 0, js_id, 0))      # prepend → js
+
 # Refresh Tracks button
 refresh_id = new_id()
 boxes.append(box(refresh_id, "textbutton",
     text="Refresh",
     numinlets=1, numoutlets=3,
     outlettype=["", "", "int"],
-    patching_rect=[300.0, 110.0, 60.0, 22.0],
+    patching_rect=[370.0, 110.0, 60.0, 22.0],
     presentation=True,
-    presentation_rect=[320.0, 49.0, 55.0, 20.0],
+    presentation_rect=[365.0, 49.0, 55.0, 20.0],
     mode=0,
     rounded=4.0,
     bgcolor=[0.35, 0.35, 0.35, 1.0],
@@ -406,18 +449,16 @@ lines.append(line(tracklist_id, 0, prepend_toggle_id, 0))  # umenu selection →
 lines.append(line(prepend_toggle_id, 0, js_id, 0))         # prepend → js
 
 # ──────────────────────────────────────────────────────────
-# Generation Controls (Row 5, y=75)
+# Generation Controls (Row 4, y=101) — no labels in presentation
 # ──────────────────────────────────────────────────────────
 
-# Duration label
+# Duration label (patching view only — not shown in presentation)
 dur_label_id = new_id()
 boxes.append(box(dur_label_id, "comment",
     text="Duration:",
     numinlets=1, numoutlets=0,
     outlettype=[],
     patching_rect=[20.0, 400.0, 55.0, 20.0],
-    presentation=True,
-    presentation_rect=[5.0, 77.0, 55.0, 18.0],
     fontname="Arial Bold", fontsize=10.0))
 
 # Duration umenu
@@ -427,7 +468,7 @@ boxes.append(box(dur_menu_id, "umenu",
     outlettype=["int", "", ""],
     patching_rect=[20.0, 420.0, 100.0, 22.0],
     presentation=True,
-    presentation_rect=[60.0, 76.0, 85.0, 20.0],
+    presentation_rect=[5.0, 101.0, 90.0, 20.0],
     parameter_enable=0,
     items="8 beats, 16 beats, 32 beats, 64 beats, 128 beats, 256 beats, 512 beats, 1024 beats, 1 min, 5 min, 10 min, 30 min",
     annotation="How long the generated composition should be — choose minutes or beats"))
@@ -445,15 +486,13 @@ lines.append(line(js_id, 5, dur_menu_id, 0))           # js outlet 5 → duratio
 lines.append(line(dur_menu_id, 0, prepend_dur_id, 0))   # umenu int → prepend
 lines.append(line(prepend_dur_id, 0, js_id, 0))          # prepend → js
 
-# Segment label
+# Segment label (patching view only — not shown in presentation)
 seg_label_id = new_id()
 boxes.append(box(seg_label_id, "comment",
     text="Segments:",
     numinlets=1, numoutlets=0,
     outlettype=[],
     patching_rect=[140.0, 400.0, 60.0, 20.0],
-    presentation=True,
-    presentation_rect=[155.0, 77.0, 60.0, 18.0],
     fontname="Arial Bold", fontsize=10.0))
 
 # Segment tab (Single / Multiple)
@@ -470,7 +509,7 @@ boxes.append({
         "num_lines_presentation": 1,
         "patching_rect": [140.0, 420.0, 120.0, 20.0],
         "presentation": 1,
-        "presentation_rect": [215.0, 76.0, 120.0, 20.0],
+        "presentation_rect": [100.0, 101.0, 120.0, 20.0],
         "annotation": "Single: one long clip per track. Multiple: several shorter random segments per track",
         "saved_attribute_attributes": {
             "valueof": {
@@ -498,15 +537,13 @@ boxes.append(box(prepend_seg_id, "newobj",
 lines.append(line(seg_tab_id, 0, prepend_seg_id, 0))  # tab → prepend
 lines.append(line(prepend_seg_id, 0, js_id, 0))        # prepend → js
 
-# View label
+# View label (patching view only — not shown in presentation)
 view_label_id = new_id()
 boxes.append(box(view_label_id, "comment",
     text="View:",
     numinlets=1, numoutlets=0,
     outlettype=[],
     patching_rect=[280.0, 400.0, 35.0, 20.0],
-    presentation=True,
-    presentation_rect=[345.0, 77.0, 35.0, 18.0],
     fontname="Arial Bold", fontsize=10.0))
 
 # View tab (Session / Arrangement)
@@ -523,7 +560,7 @@ boxes.append({
         "num_lines_presentation": 1,
         "patching_rect": [280.0, 420.0, 140.0, 20.0],
         "presentation": 1,
-        "presentation_rect": [380.0, 76.0, 160.0, 20.0],
+        "presentation_rect": [225.0, 101.0, 145.0, 20.0],
         "annotation": "Session: create clips in session view slots. Arrangement: place clips on the timeline",
         "saved_attribute_attributes": {
             "valueof": {
@@ -552,17 +589,17 @@ lines.append(line(view_tab_id, 0, prepend_view_id, 0))  # tab → prepend
 lines.append(line(prepend_view_id, 0, js_id, 0))         # prepend → js
 
 # ──────────────────────────────────────────────────────────
-# Add Track Section (Row 6, y=100)
+# Add Track Section (Row 3, y=76)
 # ──────────────────────────────────────────────────────────
 
 addtrack_label_id = new_id()
 boxes.append(box(addtrack_label_id, "comment",
-    text="Add Track:",
+    text="Add:",
     numinlets=1, numoutlets=0,
     outlettype=[],
     patching_rect=[20.0, 480.0, 65.0, 20.0],
     presentation=True,
-    presentation_rect=[5.0, 102.0, 65.0, 18.0],
+    presentation_rect=[5.0, 77.0, 50.0, 18.0],
     fontname="Arial Bold", fontsize=10.0))
 
 tracksuggestions_id = new_id()
@@ -571,7 +608,7 @@ boxes.append(box(tracksuggestions_id, "umenu",
     outlettype=["int", "", ""],
     patching_rect=[20.0, 490.0, 200.0, 22.0],
     presentation=True,
-    presentation_rect=[70.0, 101.0, 260.0, 20.0],
+    presentation_rect=[55.0, 76.0, 260.0, 20.0],
     parameter_enable=0,
     items="<no suggestions>",
     annotation="Track suggestions — shows rules with matching audio files not yet in your session. Select one and click Add Track"))
@@ -598,7 +635,7 @@ boxes.append(box(addtrack_btn_id, "textbutton",
     outlettype=["", "", "int"],
     patching_rect=[230.0, 490.0, 70.0, 22.0],
     presentation=True,
-    presentation_rect=[335.0, 101.0, 65.0, 20.0],
+    presentation_rect=[320.0, 76.0, 65.0, 20.0],
     mode=0,
     rounded=4.0,
     bgcolor=[0.35, 0.35, 0.35, 1.0],
@@ -628,7 +665,7 @@ boxes.append({
         "parameter_enable": 1,
         "patching_rect": [320.0, 490.0, 100.0, 20.0],
         "presentation": 1,
-        "presentation_rect": [402.0, 101.0, 48.0, 20.0],
+        "presentation_rect": [380.0, 101.0, 48.0, 20.0],
         "text": "Silence",
         "texton": "Silence",
         "annotation": "When enabled, clips start from non-silent regions of audio files. Requires a scan first.",
@@ -671,7 +708,7 @@ boxes.append({
         "parameter_enable": 1,
         "patching_rect": [440.0, 490.0, 60.0, 20.0],
         "presentation": 1,
-        "presentation_rect": [452.0, 101.0, 42.0, 20.0],
+        "presentation_rect": [432.0, 101.0, 42.0, 20.0],
         "text": "Loop",
         "texton": "Loop",
         "annotation": "When enabled, newly created clips will have looping turned on",
@@ -714,7 +751,7 @@ boxes.append({
         "parameter_enable": 1,
         "patching_rect": [520.0, 490.0, 60.0, 20.0],
         "presentation": 1,
-        "presentation_rect": [496.0, 101.0, 49.0, 20.0],
+        "presentation_rect": [478.0, 101.0, 49.0, 20.0],
         "text": "Key",
         "texton": "Key",
         "annotation": "When enabled, files are filtered to harmonically compatible keys using the Camelot wheel. Requires a scan first.",
@@ -746,7 +783,7 @@ lines.append(line(samekey_toggle_id, 0, prepend_samekey_id, 0))  # toggle → pr
 lines.append(line(prepend_samekey_id, 0, js_id, 0))               # prepend → js
 
 # ──────────────────────────────────────────────────────────
-# Generate Button + Server Controls (Row 7, y=125)
+# Action Bar (Row 5, y=128) — Create clips + space for future buttons
 # ──────────────────────────────────────────────────────────
 
 # Create clips button (large, green)
@@ -757,7 +794,7 @@ boxes.append(box(generate_id, "textbutton",
     outlettype=["", "", "int"],
     patching_rect=[20.0, 500.0, 200.0, 40.0],
     presentation=True,
-    presentation_rect=[5.0, 128.0, 540.0, 30.0],
+    presentation_rect=[5.0, 128.0, 330.0, 30.0],
     mode=0,
     rounded=4.0,
     fontsize=14.0,
@@ -777,6 +814,35 @@ boxes.append(box(msg_generate_id, "message",
 
 lines.append(line(generate_id, 0, msg_generate_id, 0))  # btn → message
 lines.append(line(msg_generate_id, 0, js_id, 0))         # message → js
+
+# Row variation button (next to Create clips, same height, orange)
+rowvar_id = new_id()
+boxes.append(box(rowvar_id, "textbutton",
+    text="Row variation",
+    numinlets=1, numoutlets=3,
+    outlettype=["", "", "int"],
+    patching_rect=[240.0, 500.0, 140.0, 40.0],
+    presentation=True,
+    presentation_rect=[340.0, 128.0, 200.0, 30.0],
+    mode=0,
+    rounded=4.0,
+    fontsize=14.0,
+    bgcolor=[0.6, 0.4, 0.1, 1.0],
+    bgovercolor=[0.7, 0.5, 0.15, 1.0],
+    textcolor=[1.0, 1.0, 1.0, 1.0],
+    textovercolor=[1.0, 1.0, 1.0, 1.0],
+    annotation="Create a variation of the selected scene — copies all clips to a new scene with different random starting positions. Cmd+Z to undo"))
+
+# Routing: Row variation btn → message rowVariation → js
+msg_rowvar_id = new_id()
+boxes.append(box(msg_rowvar_id, "message",
+    text="rowVariation",
+    numinlets=2, numoutlets=1,
+    outlettype=[""],
+    patching_rect=[240.0, 550.0, 80.0, 22.0]))
+
+lines.append(line(rowvar_id, 0, msg_rowvar_id, 0))  # btn → message
+lines.append(line(msg_rowvar_id, 0, js_id, 0))       # message → js
 
 # ──────────────────────────────────────────────────────────
 # Device Vertical Limit (hidden marker for M4L height)

@@ -66,6 +66,9 @@ var scanning = false;
 var folders = [];
 var tracks = [];
 var trackEnabled = {}; // trackIndex -> boolean
+var lastSelectedTrackIndex = 0; // last track index clicked in umenu
+var soloActive = false; // whether solo mode is currently engaged
+var preSoloEnabled = {}; // saved trackEnabled state before solo
 var fileGroups = {};
 var fileCount = 0;
 var folderCount = 0;
@@ -372,6 +375,10 @@ function handleResponse(data) {
       updateStatus('Done! Created ' + data.clipsCreated + ' clips');
       break;
 
+    case 'variation_complete':
+      updateStatus('Variation done! ' + data.clipsCreated + ' clips in scene ' + (data.newSceneIndex + 1));
+      break;
+
     case 'error':
       post('Generative Library ERROR: ' + data.message + '\n');
       updateStatus('Error: ' + data.message);
@@ -488,12 +495,68 @@ function setTrackEnabled(trackIndex, enabled) {
 
 /**
  * Toggle a track's enabled state when clicked in the umenu.
+ * When solo is active, only update the selection — don't toggle state.
  * Wire: [umenu tracks] → [prepend toggleTrack] → [js]
  */
 function toggleTrack(index) {
   if (index < 0 || index >= tracks.length) return;
+  lastSelectedTrackIndex = index;
+  if (soloActive) {
+    // In solo mode, don't modify trackEnabled — just update the selection display
+    return;
+  }
   trackEnabled[index] = !trackEnabled[index];
   updateTrackList();
+}
+
+/**
+ * Solo/unsolo toggle for the currently selected track.
+ * When engaged: saves current state, disables all tracks except the selected one.
+ * When disengaged: restores the previous state.
+ * Wire: [live.text "Solo"] → [prepend soloTrack] → [js]
+ */
+function soloTrack(state) {
+  if (state === 1) {
+    // Engaging solo
+    if (lastSelectedTrackIndex < 0 || lastSelectedTrackIndex >= tracks.length) {
+      updateStatus('Select a track first');
+      return;
+    }
+
+    var soloedTrack = tracks[lastSelectedTrackIndex];
+    if (soloedTrack.type !== 'audio') {
+      updateStatus('Cannot solo non-audio track');
+      return;
+    }
+
+    // Save current enabled state
+    preSoloEnabled = {};
+    for (var i = 0; i < tracks.length; i++) {
+      preSoloEnabled[i] = trackEnabled[i] !== false;
+    }
+
+    // Disable all tracks, then enable only the selected one
+    for (var i = 0; i < tracks.length; i++) {
+      trackEnabled[i] = false;
+    }
+    trackEnabled[lastSelectedTrackIndex] = true;
+    soloActive = true;
+    updateTrackList();
+    updateStatus('Solo: ' + soloedTrack.name);
+  } else {
+    // Disengaging solo — restore previous state
+    if (soloActive) {
+      for (var i = 0; i < tracks.length; i++) {
+        if (preSoloEnabled[i] !== undefined) {
+          trackEnabled[i] = preSoloEnabled[i];
+        }
+      }
+      soloActive = false;
+      preSoloEnabled = {};
+      updateTrackList();
+      updateStatus('Solo off');
+    }
+  }
 }
 
 /**
@@ -649,6 +712,60 @@ function generate() {
   post('Generative Library: Generating with config: ' + JSON.stringify(config) + '\n');
   updateStatus('Generating...');
   sendCommand({ type: 'generate', config: config });
+}
+
+/**
+ * ROW VARIATION — create a variation of the selected scene.
+ * Reads clips from the currently selected scene, then creates new clips
+ * on a new scene with different random starting positions.
+ */
+function rowVariation() {
+  if (!serverConnected) {
+    updateStatus('Error: Server not connected');
+    return;
+  }
+
+  // Get currently selected scene index from Ableton
+  var sceneTask = new Task(function () {
+    try {
+      var songApi = new LiveAPI('live_set');
+      if (!songApi || songApi.id == 0) {
+        updateStatus('Error: Cannot access Live');
+        return;
+      }
+
+      // Get the selected scene via the Song's view
+      var viewApi = new LiveAPI('live_set view');
+      var selectedScene = viewApi.get('selected_scene');
+
+      // selectedScene returns "id <number>" — resolve it to get the scene index
+      var sceneApi = new LiveAPI('id ' + selectedScene[1]);
+      var scenePath = sceneApi.unquotedpath;
+
+      // Parse scene index from path: "live_set scenes N"
+      var parts = scenePath.split(' ');
+      var sceneIndex = parseInt(parts[parts.length - 1], 10);
+
+      if (isNaN(sceneIndex) || sceneIndex < 0) {
+        updateStatus('Error: Could not determine selected scene');
+        return;
+      }
+
+      post('Generative Library: Creating row variation from scene ' + (sceneIndex + 1) + '\n');
+      updateStatus('Creating variation of scene ' + (sceneIndex + 1) + '...');
+      sendCommand({
+        type: 'row_variation',
+        sceneIndex: sceneIndex,
+        skipSilence: skipSilence,
+        loopClips: loopClips,
+        sameKey: sameKey
+      });
+    } catch (e) {
+      post('ERROR in rowVariation: ' + e.message + '\n');
+      updateStatus('Error: ' + e.message);
+    }
+  }, this);
+  sceneTask.schedule(50);
 }
 
 // ─── UI Updates (send data to Max UI elements via outlets) ───

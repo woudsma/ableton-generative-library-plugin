@@ -1,6 +1,16 @@
 import { Ableton } from 'ableton-js';
 import type { AbletonTrack, ViewMode } from './types.js';
 
+export interface SessionClipInfo {
+  trackIndex: number;
+  trackName: string;
+  filePath: string;
+  startMarker: number;
+  endMarker: number;
+  looping: boolean;
+  name: string;
+}
+
 export class AbletonService {
   private ableton: Ableton;
   private connected = false;
@@ -391,6 +401,63 @@ export class AbletonService {
     if (options?.name) {
       await clip.set('name', options.name);
     }
+  }
+
+  // ─── Scene Queries ───
+
+  /**
+   * Get all clips from a given scene (row) across all tracks.
+   * Returns info about each clip: track index, file path, markers, etc.
+   */
+  async getSceneClips(sceneIndex: number): Promise<SessionClipInfo[]> {
+    this.ensureConnected();
+
+    const tracks = await this.ableton.song.get('tracks');
+    const results: SessionClipInfo[] = [];
+
+    for (let i = 0; i < tracks.length; i++) {
+      const track = tracks[i];
+      const hasAudioInput = await track.get('has_audio_input');
+      const isFoldable = track.raw.is_foldable;
+
+      // Only process audio tracks
+      if (isFoldable || !hasAudioInput) continue;
+
+      const clipSlots = await track.get('clip_slots');
+      if (sceneIndex >= clipSlots.length) continue;
+
+      const slot = clipSlots[sceneIndex];
+      const hasClip = await slot.get('has_clip');
+      if (!hasClip) continue;
+
+      const clip = await slot.get('clip');
+      if (!clip) continue;
+
+      try {
+        const filePath = await clip.get('file_path');
+        if (!filePath) continue; // not an audio clip
+
+        const startMarker = await clip.get('start_marker');
+        const endMarker = await clip.get('end_marker');
+        const looping = await clip.get('looping');
+        const name = await clip.get('name');
+
+        results.push({
+          trackIndex: i,
+          trackName: track.raw.name,
+          filePath,
+          startMarker,
+          endMarker,
+          looping,
+          name,
+        });
+      } catch (err) {
+        // Some clips may not have file_path (e.g. MIDI clips that slipped through)
+        console.warn(`[Ableton] Could not read clip info at scene ${sceneIndex}, track ${i}:`, err);
+      }
+    }
+
+    return results;
   }
 
   // ─── Undo Support ───

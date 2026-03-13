@@ -1,6 +1,6 @@
 {
   "name": "ableton-generative-library-plugin",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Generative composition tool for Ableton Live — creates new arrangements from your existing audio library",
   "private": true,
   "type": "module",

@@ -124,6 +124,14 @@ export class UDPServer {
         await this.handleGenerate(command.config);
         break;
 
+      case 'row_variation':
+        await this.handleRowVariation(command.sceneIndex, {
+          skipSilence: command.skipSilence,
+          loopClips: command.loopClips,
+          sameKey: command.sameKey,
+        });
+        break;
+
       case 'get_duration_options':
         this.sendResponse({ type: 'duration_options', options: DURATION_OPTIONS });
         break;
@@ -324,6 +332,53 @@ export class UDPServer {
     }
     const suggestions = this.db.getTrackSuggestions(existingNames);
     this.sendResponse({ type: 'track_suggestions', suggestions });
+  }
+
+  private async handleRowVariation(
+    sceneIndex: number,
+    options?: { skipSilence?: boolean; loopClips?: boolean; sameKey?: boolean },
+  ): Promise<void> {
+    try {
+      await this.ableton.ensureConnectedOrReconnect();
+    } catch {
+      this.sendResponse({ type: 'error', message: 'Not connected to Ableton Live' });
+      return;
+    }
+
+    console.log(`[Server] Creating row variation from scene ${sceneIndex}`);
+
+    try {
+      const result = await this.engine.createRowVariation(
+        sceneIndex,
+        options,
+        (current, total, trackName) => {
+          this.sendResponse({ type: 'generation_progress', current, total, trackName });
+        },
+      );
+
+      if (result.clipsCreated === 0) {
+        this.sendResponse({
+          type: 'error',
+          message: 'No clips created (scene may be empty)',
+        });
+        return;
+      }
+
+      console.log(
+        `[Server] Row variation complete: ${result.clipsCreated} clips in scene ${result.newSceneIndex}`,
+      );
+      this.sendResponse({
+        type: 'variation_complete',
+        clipsCreated: result.clipsCreated,
+        newSceneIndex: result.newSceneIndex,
+      });
+    } catch (err) {
+      console.error('[Server] Row variation failed:', err instanceof Error ? err.message : err);
+      this.sendResponse({
+        type: 'error',
+        message: `Row variation failed: ${err instanceof Error ? err.message : err}`,
+      });
+    }
   }
 
   // ─── OSC Protocol Helpers ───
