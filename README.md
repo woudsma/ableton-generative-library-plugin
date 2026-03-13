@@ -2,7 +2,7 @@
 
 A generative composition tool for **Ableton Live 12** that creates random compositions from your existing audio recordings. Point it at folders of jam recordings, and it automatically groups files by track type (KICK, HIHAT, SYNTH, etc.) and generates clip arrangements in session or arrangement view.
 
-<video src="https://github.com/user-attachments/assets/22f4fdd7-07d2-4a33-a1f4-e4588ea1bbb3" controls width="100%"></video>
+<video src="https://github.com/user-attachments/assets/a688aa08-630d-4d17-b4d7-5c632bde9559" controls width="100%"></video>
 
 ## How It Works
 
