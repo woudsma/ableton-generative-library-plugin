@@ -6,7 +6,7 @@ A generative composition tool for **Ableton Live 12** that creates random compos
 
 ### Audio Examples
 
-Some random compositions, no effects: [1](https://github.com/user-attachments/files/25989028/179-generative-library-plugin-0.mp3), [2](https://github.com/user-attachments/files/25989036/179-generative-library-plugin-1.mp3), [3](https://github.com/user-attachments/files/25989041/179-generative-library-plugin-2.mp3)
+Some random compositions, no effects: [[1]](https://github.com/user-attachments/files/25989028/179-generative-library-plugin-0.mp3), [[2]](https://github.com/user-attachments/files/25989036/179-generative-library-plugin-1.mp3), [[3]](https://github.com/user-attachments/files/25989041/179-generative-library-plugin-2.mp3)
 
 ## How It Works
 
