@@ -8,11 +8,11 @@ A generative composition tool for **Ableton Live 12** that creates random compos
 
 Some random compositions, no effects
 
-<audio src="https://github.com/user-attachments/files/25989028/179-generative-library-plugin-0.mp3" controls></audio>
+<video src="https://github.com/user-attachments/files/25989028/179-generative-library-plugin-0.mp3" controls></video>
 
-<audio src="https://github.com/user-attachments/files/25989036/179-generative-library-plugin-1.mp3" controls></audio>
+<video src="https://github.com/user-attachments/files/25989036/179-generative-library-plugin-1.mp3" controls></video>
 
-<audio src="https://github.com/user-attachments/files/25989041/179-generative-library-plugin-2.mp3" controls></audio>
+<video src="https://github.com/user-attachments/files/25989041/179-generative-library-plugin-2.mp3" controls></video>
 
 ## How It Works
 
