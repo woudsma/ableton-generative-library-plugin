@@ -4,6 +4,16 @@ A generative composition tool for **Ableton Live 12** that creates random compos
 
 <video src="https://github.com/user-attachments/assets/a688aa08-630d-4d17-b4d7-5c632bde9559" controls width="100%"></video>
 
+### Audio Examples
+
+Some random compositions, no effects
+
+https://github.com/user-attachments/files/25989028/179-generative-library-plugin-0.mp3
+
+https://github.com/user-attachments/files/25989036/179-generative-library-plugin-1.mp3
+
+https://github.com/user-attachments/files/25989041/179-generative-library-plugin-2.mp3
+
 ## How It Works
 
 A **Max for Live device** provides the UI inside Ableton. A **Node.js server** handles file scanning, database, and generative logic. Communication is over UDP (OSC/JSON). Clip creation uses `ableton-js` and Live 12's `Track.create_audio_clip()` API.
